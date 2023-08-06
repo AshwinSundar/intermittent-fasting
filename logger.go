@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 )
 
@@ -21,13 +22,22 @@ func (s *Segment) updateTime(t string, interval string) bool {
 
 	switch interval {
 	case "s", "start", "startTime":
-			s.startTime = t
+		s.startTime = t
 	case "e", "end", "endTime":
-			s.endTime = t
+		s.endTime = t
 	default:
 		fmt.Println("did not update either interval")
 	}
 
+	return true
+}
+
+func (s *Segment) updateDate(d string) bool {
+	if !s.validateDate(d) {
+		return false
+	}
+
+	s.date = d
 	return true
 }
 
@@ -55,9 +65,37 @@ func (s *Segment) validateTime(time string) bool {
 	return timeIsValid
 }
 
+func (s *Segment) isValid() bool {
+	validDate := s.validateDate(s.date)
+	validTimes := s.validateTime(s.startTime) && s.validateTime(s.endTime)
+
+	return validDate && validTimes
+}
+
 // handles CRUD on file
 // good place to use defer to close files properly
 type FileInterface struct{}
+
+func (f *FileInterface) write (seg Segment, fileName string) (bool, error) {
+	if !(seg.isValid()) {
+		fmt.Println("Segment is not valid: ", seg)
+		return false, nil
+	}	
+
+	file, err := os.OpenFile(fileName, os.O_APPEND, 0644)
+
+	if err != nil {
+		return false, err
+	}
+
+	defer file.Close()
+	strToWrite := seg.date + ", " + seg.startTime + ", " + seg.endTime
+	if _, err := file.WriteString(strToWrite); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
 
 // handles CLI
 type CmdLineInterface struct{}
@@ -82,6 +120,7 @@ func main() {
 	segment := Segment{}
 	var err error
 
+
 	fmt.Println("Enter time of first meal today (HHMM): ")
 	input, err := cmdLineInt.read()
 	segment.updateTime(input, "start")
@@ -97,6 +136,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not write endTime, error: %v", err)
 	}
+	
+	segment.date = "20230805"
+	fileInterface := FileInterface {}
+	fileInterface.write(segment, "fakeFile") // not writing currently
 
 	fmt.Println(segment)
 }

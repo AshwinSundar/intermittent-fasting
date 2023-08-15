@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"time"
 )
 
 // accepts times, days
@@ -15,8 +16,8 @@ type Segment struct {
 	endTime   string
 }
 
-func (s *Segment) updateTime(t string, interval string) bool {
-	if !s.validateTime(t) { // error logged in validateTime
+func (s *Segment) UpdateTime(t string, interval string) bool {
+	if !ValidateTime(t) { // error logged in validateTime
 		return false
 	}
 
@@ -32,8 +33,8 @@ func (s *Segment) updateTime(t string, interval string) bool {
 	return true
 }
 
-func (s *Segment) updateDate(d string) bool {
-	if !s.validateDate(d) {
+func (s *Segment) UpdateDate(d string) bool {
+	if ValidateDate(d) {
 		return false
 	}
 
@@ -41,21 +42,17 @@ func (s *Segment) updateDate(d string) bool {
 	return true
 }
 
-func (s *Segment) validateDate(date string) bool {
-	dateIsValid, err := regexp.MatchString("^[2][0][0-9]{2}[0-1][0-9][0-3][0-9]$", date) // YYYYMMDD
-
-	if !dateIsValid {
-		return false
-	}
+func ValidateDate(date string) bool {
+	dateIsValid, err := regexp.MatchString("^[2][0][0-9]{2}[-][0-1][0-9][-][0-3][0-9]$", date) // YYYYMMDD
 
 	if err != nil {
 		log.Fatalf("validateDate failed with: %v", err)
 	}
 
-	return true
+	return dateIsValid
 }
 
-func (s *Segment) validateTime(time string) bool {
+func ValidateTime(time string) bool {
 	timeIsValid, err := regexp.MatchString("^[0-2][0-9][0-5][0-9]$", time)
 
 	if err != nil {
@@ -66,38 +63,39 @@ func (s *Segment) validateTime(time string) bool {
 }
 
 func (s *Segment) isValid() bool {
-	validDate := s.validateDate(s.date)
-	validTimes := s.validateTime(s.startTime) && s.validateTime(s.endTime)
+	validDate := ValidateDate(s.date)
+	validTimes := ValidateTime(s.startTime) && ValidateTime(s.endTime)
 
 	return validDate && validTimes
 }
 
-// handles CRUD on file
-// good place to use defer to close files properly
+// FileInterface type handles writing to file. Will not handle update, delete - edit .txt directly instead.
 type FileInterface struct{}
 
-func (f *FileInterface) write (seg Segment, fileName string) (bool, error) {
+func (f *FileInterface) write (seg Segment, fileName string) bool {
 	if !(seg.isValid()) {
 		fmt.Println("Segment is not valid: ", seg)
-		return false, nil
+		return false
 	}	
 
-	file, err := os.OpenFile(fileName, os.O_APPEND, 0644)
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_APPEND, 0644)
 
 	if err != nil {
-		return false, err
+		log.Fatalf("Error opening file %v - %v", fileName, err)
+		return false
+	}
+
+	strToWrite := seg.date + ", " + seg.startTime + ", " + seg.endTime + "\n"
+	if _, err := file.WriteString(strToWrite); err != nil {
+		log.Fatalf("Error writing to %v - %v", fileName, err)
+		return false
 	}
 
 	defer file.Close()
-	strToWrite := seg.date + ", " + seg.startTime + ", " + seg.endTime
-	if _, err := file.WriteString(strToWrite); err != nil {
-		return false, err
-	}
-
-	return true, nil
+	return true
 }
 
-// handles CLI
+// CmdLineInterface handles user interface via CLI
 type CmdLineInterface struct{}
 
 func (c *CmdLineInterface) read() (string, error) {
@@ -105,14 +103,14 @@ func (c *CmdLineInterface) read() (string, error) {
 	_, err := fmt.Scanln(&input)
 
 	if err != nil {
-		log.Fatalf("Error reading input: ", err)
+		log.Fatalf("Error reading input: %v", err)
 		return "", err
 	}
 
 	return input, nil
 }
 
-// prints charts
+// Visualizer handles charts
 type Visualizer struct{}
 
 func main() {
@@ -120,10 +118,9 @@ func main() {
 	segment := Segment{}
 	var err error
 
-
 	fmt.Println("Enter time of first meal today (HHMM): ")
 	input, err := cmdLineInt.read()
-	segment.updateTime(input, "start")
+	segment.UpdateTime(input, "start")
 
 	if err != nil {
 		log.Fatalf("Could not write startTime, error: %v", err)
@@ -131,15 +128,15 @@ func main() {
 
 	fmt.Println("Enter time of last meal today (HHMM): ")
 	input, err = cmdLineInt.read()
-	segment.updateTime(input, "end")
+	segment.UpdateTime(input, "end")
 
 	if err != nil {
 		log.Fatalf("Could not write endTime, error: %v", err)
 	}
 	
-	segment.date = "20230805"
+	segment.UpdateDate(time.Now().Format("2006-01-02"))
 	fileInterface := FileInterface {}
-	fileInterface.write(segment, "fakeFile") // not writing currently
-
+	res := fileInterface.write(segment, "if_log.txt")
+	fmt.Printf("wrote file: %v", res)
 	fmt.Println(segment)
 }

@@ -1,6 +1,6 @@
 # Intermittent Fasting CLI  
 
-## CLI tool for tracking intermittent fasting times  
+CLI tool for tracking intermittent fasting times. Writes data to .txt file, provides simple visualization in terminal (coming soon).
 
 ## TO DO  
 

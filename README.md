@@ -4,11 +4,15 @@ CLI tool for tracking intermittent fasting times. Writes data to .txt file, prov
 
 ## TO DO  
 
-[X] create tests  
-[] create visualizer  
+[] test FileWrite
+[] write FileValidate
+[] test FileValidate
+[] write Visualizer  
+[] test Visualizer
 
 ====
 
 Things I learned writing this program:
 
-- Go obeys a principle of progressive disclosure. The language is easy to use out of the box. Simple features are simple to use, which sounds redundant but is not true of all programming languages and environments. Complexity is available, but only if the programmer seeks it out. 
+- Go obeys a principle of progressive disclosure. The language is easy to use out of the box. Simple features are simple to use, which sounds redundant but is not true of all programming languages and environments. Complexity is available, but only if the programmer seeks it out.  
+- Table-Driven Testing, concept seems to enable Response Surface Modeling, in that the "surface" of the function can be fully tested by creating a table of possible inputs. This style of writing mode makes it easier to visually verify that one is testing appropriate corner cases.  

@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"time"
 )
 
 // accepts times, days
@@ -34,7 +33,7 @@ func (s *Segment) UpdateTime(t string, interval string) bool {
 }
 
 func (s *Segment) UpdateDate(d string) bool {
-	if ValidateDate(d) {
+	if !ValidateDate(d) {
 		return false
 	}
 
@@ -69,10 +68,7 @@ func (s *Segment) isValid() bool {
 	return validDate && validTimes
 }
 
-// FileInterface type handles writing to file. Will not handle update, delete - edit .txt directly instead.
-type FileInterface struct{}
-
-func (f *FileInterface) write (seg Segment, fileName string) bool {
+func FileWrite (seg Segment, fileName string) bool {
 	if !(seg.isValid()) {
 		fmt.Println("Segment is not valid: ", seg)
 		return false
@@ -95,10 +91,10 @@ func (f *FileInterface) write (seg Segment, fileName string) bool {
 	return true
 }
 
-// CmdLineInterface handles user interface via CLI
-type CmdLineInterface struct{}
+// Checks for duplicates, makes sure each line is valid
+// func FileValidate(fileName string) bool {}
 
-func (c *CmdLineInterface) read() (string, error) {
+func CliRead() (string, error) {
 	var input string
 	_, err := fmt.Scanln(&input)
 
@@ -114,29 +110,46 @@ func (c *CmdLineInterface) read() (string, error) {
 type Visualizer struct{}
 
 func main() {
-	cmdLineInt := CmdLineInterface{}
 	segment := Segment{}
 	var err error
 
-	fmt.Println("Enter time of first meal today (HHMM): ")
-	input, err := cmdLineInt.read()
-	segment.UpdateTime(input, "start")
-
+	fmt.Println("Enter date (YYYY-MM-DD)")
+	input, err := CliRead()
 	if err != nil {
 		log.Fatalf("Could not write startTime, error: %v", err)
 	}
+	res := segment.UpdateDate(input)
+	if !res {
+		log.Fatalf("Could not update date.")
+	}
+
+
+	fmt.Println("Enter time of first meal (HHMM): ")
+	input, err = CliRead()
+	if err != nil {
+		log.Fatalf("Could not write startTime, error: %v", err)
+	}
+	res = segment.UpdateTime(input, "start")
+	if !res {
+		log.Fatalf("Could not update start time.")
+	}
+
 
 	fmt.Println("Enter time of last meal today (HHMM): ")
-	input, err = cmdLineInt.read()
-	segment.UpdateTime(input, "end")
-
+	input, err = CliRead()
 	if err != nil {
 		log.Fatalf("Could not write endTime, error: %v", err)
 	}
+	res = segment.UpdateTime(input, "end")
+	if !res {
+		log.Fatalf("Could not update end time.")
+	}
 	
-	segment.UpdateDate(time.Now().Format("2006-01-02"))
-	fileInterface := FileInterface {}
-	res := fileInterface.write(segment, "if_log.txt")
-	fmt.Printf("wrote file: %v", res)
-	fmt.Println(segment)
+	res = FileWrite(segment, "if_log.txt")
+
+	if res {
+		fmt.Println("Write successful")
+	} else {
+		fmt.Println("Write failed")
+	}
 }

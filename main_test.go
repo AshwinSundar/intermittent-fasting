@@ -31,6 +31,11 @@ func Test_ValidateDate(t *testing.T) {
 			date: "2023-20-12",
 			expected: false,
 		},
+		{
+			description: "2023-08-16",
+			date: "2023-08-16",
+			expected: true,
+		},
 		/*
 		// test fails, currently allows YYYY13DD - YYYY19DD
 		{

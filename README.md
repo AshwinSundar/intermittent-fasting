@@ -4,11 +4,11 @@ CLI tool for tracking intermittent fasting times. Writes data to .txt file, prov
 
 ## TO DO  
 
-[] test FileWrite
-[] write FileValidate
-[] test FileValidate
+[] test FileWrite  
+[] write FileValidate  
+[] test FileValidate  
 [] write Visualizer  
-[] test Visualizer
+[] test Visualizer  
 
 ====
 
